@@ -1,13 +1,14 @@
 import type { Question, WeaknessProfile, StudyModule, Topic, QuestionType } from '../types';
+import { TOPIC_LABELS } from '../types';
 import { questionBank } from '../data/questionBank';
 import { v4 as uuid } from 'uuid';
 
 /**
  * Adaptive question selector that targets user weaknesses.
  * Priority order:
- * 1. Questions from weak topics
+ * 1. Questions from weak subjects
  * 2. Questions with phrasing features the user struggles with
- * 3. Questions containing terms the user struggles with
+ * 3. Questions containing legal terms the user struggles with
  * 4. Questions of types the user struggles with
  * 5. Higher difficulty questions in weak areas
  */
@@ -105,11 +106,11 @@ export function generateStudyModules(profile: WeaknessProfile, answeredIds: Set<
 
   if (profile.totalAnswered < 3) {
     // Not enough data—generate a diagnostic module
-    const diagnosticQuestions = selectDiagnosticQuestions(10);
+    const diagnosticQuestions = selectDiagnosticQuestions(11);
     modules.push({
       id: uuid(),
       title: 'Diagnostic Assessment',
-      description: 'Answer these questions across different topics to help us identify your strengths and weaknesses.',
+      description: 'Answer these questions across different bar exam subjects to help us identify your strengths and weaknesses.',
       targetWeaknesses: ['diagnostic'],
       questions: diagnosticQuestions,
       completed: false,
@@ -117,15 +118,15 @@ export function generateStudyModules(profile: WeaknessProfile, answeredIds: Set<
     return modules;
   }
 
-  // Module for each weak topic (accuracy below overall - 0.05)
+  // Module for each weak subject (accuracy below overall - 0.05)
   const weakTopics = profile.weakTopics.filter(t => t.accuracy < profile.overallAccuracy - 0.05 && t.totalAttempted >= 2);
   for (const topicStat of weakTopics.slice(0, 3)) {
     const questions = selectAdaptiveQuestions(profile, answeredIds, 6, topicStat.topic);
     if (questions.length >= 3) {
       modules.push({
         id: uuid(),
-        title: `Strengthen: ${topicStat.topic.charAt(0).toUpperCase() + topicStat.topic.slice(1)}`,
-        description: `You're at ${Math.round(topicStat.accuracy * 100)}% in ${topicStat.topic}. These questions target your specific gaps.`,
+        title: `Strengthen: ${TOPIC_LABELS[topicStat.topic]}`,
+        description: `You're at ${Math.round(topicStat.accuracy * 100)}% in ${TOPIC_LABELS[topicStat.topic]}. These questions target your specific gaps.`,
         targetWeaknesses: [topicStat.topic],
         questions,
         completed: false,
@@ -168,7 +169,7 @@ export function generateStudyModules(profile: WeaknessProfile, answeredIds: Set<
     modules.push({
       id: uuid(),
       title: 'Targeted Review',
-      description: 'A mix of questions targeting your weakest areas across all subjects.',
+      description: 'A mix of questions targeting your weakest areas across all bar exam subjects.',
       targetWeaknesses: ['mixed'],
       questions: mixedQuestions,
       completed: false,

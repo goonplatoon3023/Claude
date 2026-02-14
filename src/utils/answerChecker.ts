@@ -2,7 +2,7 @@ import type { Question } from '../types';
 
 /**
  * Checks if a user's answer is correct, supporting fuzzy matching
- * for free-text answers.
+ * for free-text legal answers.
  */
 export function checkAnswer(question: Question, userAnswer: string): boolean {
   const trimmed = userAnswer.trim();
@@ -17,8 +17,8 @@ export function checkAnswer(question: Question, userAnswer: string): boolean {
   // Exact match
   if (normalizedUser === normalizedCorrect) return true;
 
-  // For multiple choice and true/false, must match exactly
-  if (question.type === 'multiple-choice' || question.type === 'true-false') {
+  // For multiple choice, true/false, and issue-spotting, must match exactly
+  if (question.type === 'multiple-choice' || question.type === 'true-false' || question.type === 'issue-spotting') {
     return normalizedUser === normalizedCorrect;
   }
 
@@ -35,12 +35,10 @@ export function checkAnswer(question: Question, userAnswer: string): boolean {
     }
   }
 
-  // For fill-in-the-blank, also try numeric comparison
+  // For fill-in-the-blank, also try substring match
   if (question.type === 'fill-in-the-blank') {
-    const userNum = parseFloat(normalizedUser);
-    const correctNum = parseFloat(normalizedCorrect);
-    if (!isNaN(userNum) && !isNaN(correctNum)) {
-      return Math.abs(userNum - correctNum) < 0.01;
+    if (normalizedCorrect.includes(normalizedUser) || normalizedUser.includes(normalizedCorrect)) {
+      return true;
     }
   }
 

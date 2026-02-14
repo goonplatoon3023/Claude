@@ -31,7 +31,7 @@ export default function Dashboard({ profile, records }: DashboardProps) {
       <div className="dashboard">
         <div className="dashboard-empty">
           <h2>No Data Yet</h2>
-          <p>Start answering questions in Guided or Self Study mode to see your analytics here.</p>
+          <p>Start answering questions in Guided or Self Study mode to see your bar exam analytics here.</p>
         </div>
       </div>
     );
@@ -98,13 +98,13 @@ export default function Dashboard({ profile, records }: DashboardProps) {
         </div>
         <div className="stat-card">
           <div className="stat-value">{profile.weakTopics.length}</div>
-          <div className="stat-label">Topics Covered</div>
+          <div className="stat-label">Subjects Covered</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">
             {profile.phrasingWeaknesses.filter(p => p.delta < -0.1).length}
           </div>
-          <div className="stat-label">Phrasing Traps Found</div>
+          <div className="stat-label">Phrasing Traps</div>
         </div>
       </div>
 
@@ -145,7 +145,7 @@ export default function Dashboard({ profile, records }: DashboardProps) {
         </section>
 
         <section className="dashboard-section chart-half">
-          <h3>Accuracy by Topic</h3>
+          <h3>Accuracy by Subject</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={topicData} layout="vertical" margin={{ left: 10, right: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -221,9 +221,9 @@ export default function Dashboard({ profile, records }: DashboardProps) {
       {/* ─── Term Weaknesses ─────────────────────────────── */}
       {profile.termWeaknesses.length > 0 && (
         <section className="dashboard-section">
-          <h3>Weak Terms & Vocabulary</h3>
+          <h3>Weak Legal Terms & Concepts</h3>
           <p className="section-desc">
-            Specific terms that appear in questions you tend to get wrong.
+            Legal terms and concepts that appear in questions you tend to get wrong.
           </p>
           <div className="term-chips">
             {profile.termWeaknesses.slice(0, 15).map((t) => (
@@ -242,7 +242,7 @@ export default function Dashboard({ profile, records }: DashboardProps) {
       {/* ─── Topic × Difficulty ──────────────────────────── */}
       {topicDifficultyData.length > 0 && (
         <section className="dashboard-section">
-          <h3>Topic × Difficulty Breakdown</h3>
+          <h3>Subject × Difficulty Breakdown</h3>
           <div className="difficulty-table">
             <div className="difficulty-header">
               <span>Topic</span>

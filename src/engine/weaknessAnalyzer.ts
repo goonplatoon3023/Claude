@@ -23,12 +23,12 @@ const COMPLEXITY_FEATURES = [
 ] as const;
 
 const VOCAB_FEATURES = [
-  { key: 'intermediate', label: 'Intermediate Vocabulary' },
-  { key: 'advanced', label: 'Advanced Vocabulary' },
+  { key: 'intermediate', label: 'Intermediate Legal Vocabulary' },
+  { key: 'advanced', label: 'Advanced Legal Vocabulary' },
 ] as const;
 
 function emptyTypeStats(): Record<QuestionType, { attempted: number; correct: number; accuracy: number }> {
-  const types: QuestionType[] = ['multiple-choice', 'true-false', 'fill-in-the-blank', 'matching', 'short-answer'];
+  const types: QuestionType[] = ['multiple-choice', 'true-false', 'fill-in-the-blank', 'issue-spotting', 'short-answer'];
   const result = {} as Record<QuestionType, { attempted: number; correct: number; accuracy: number }>;
   for (const t of types) {
     result[t] = { attempted: 0, correct: 0, accuracy: 0 };

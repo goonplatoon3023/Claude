@@ -8,19 +8,19 @@
   --text-secondary: #4b5563;
   --text-muted: #9ca3af;
   --border: #e5e7eb;
-  --accent: #4f46e5;
-  --accent-bg: #eef2ff;
-  --accent-hover: #4338ca;
+  --accent: #1e40af;
+  --accent-bg: #eff6ff;
+  --accent-hover: #1e3a8a;
   --success: #16a34a;
   --success-bg: #f0fdf4;
   --error: #dc2626;
   --error-bg: #fef2f2;
   --warning: #eab308;
   --warning-bg: #fefce8;
-  --sidebar-bg: #111827;
-  --sidebar-text: #d1d5db;
+  --sidebar-bg: #0f172a;
+  --sidebar-text: #cbd5e1;
   --sidebar-active: #ffffff;
-  --sidebar-hover: #1f2937;
+  --sidebar-hover: #1e293b;
 
   /* Typography */
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -44,9 +44,9 @@
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
     --border: #334155;
-    --accent: #818cf8;
-    --accent-bg: #1e1b4b;
-    --accent-hover: #6366f1;
+    --accent: #60a5fa;
+    --accent-bg: #172554;
+    --accent-hover: #3b82f6;
     --success: #22c55e;
     --success-bg: #052e16;
     --error: #f87171;

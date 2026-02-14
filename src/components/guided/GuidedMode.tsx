@@ -31,7 +31,7 @@ export default function GuidedMode({ modules, onCompleteModule }: GuidedModeProp
         <h2>Guided Study</h2>
         <p className="guided-subtitle">
           Modules are generated based on your performance. Each one targets specific weaknesses
-          detected in your answers.
+          detected in your bar exam practice answers.
         </p>
       </div>
 

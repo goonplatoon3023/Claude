@@ -88,7 +88,7 @@ export default function SelfStudyMode({ profile, answeredIds, onComplete }: Self
   };
 
   if (activeQuiz) {
-    const topicLabel = selectedTopic === 'all' ? 'All Topics' : TOPIC_LABELS[selectedTopic];
+    const topicLabel = selectedTopic === 'all' ? 'All Subjects' : TOPIC_LABELS[selectedTopic];
     return (
       <QuizView
         questions={activeQuiz}
@@ -111,20 +111,20 @@ export default function SelfStudyMode({ profile, answeredIds, onComplete }: Self
       <div className="self-study-header">
         <h2>Self Study</h2>
         <p className="self-study-subtitle">
-          Choose your topic, question type, and difficulty. Questions are still adaptively ordered
+          Choose your bar exam subject, question type, and difficulty. Questions are adaptively ordered
           to target your weaknesses within your selection.
         </p>
       </div>
 
       {/* ─── Topic Selection ─────────────────────────────── */}
       <section className="filter-section">
-        <h3>Topic</h3>
+        <h3>Subject</h3>
         <div className="filter-chips">
           <button
             className={`filter-chip ${selectedTopic === 'all' ? 'active' : ''}`}
             onClick={() => setSelectedTopic('all')}
           >
-            All Topics <span className="chip-count">{topicCounts.all}</span>
+            All Subjects <span className="chip-count">{topicCounts.all}</span>
           </button>
           {topics.map((topic) => (
             <button

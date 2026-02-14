@@ -2,41 +2,43 @@ export type QuestionType =
   | 'multiple-choice'
   | 'true-false'
   | 'fill-in-the-blank'
-  | 'matching'
+  | 'issue-spotting'
   | 'short-answer';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export type Topic =
-  | 'algebra'
-  | 'geometry'
-  | 'statistics'
-  | 'calculus'
-  | 'biology'
-  | 'chemistry'
-  | 'physics'
-  | 'history'
-  | 'literature'
-  | 'grammar';
+  | 'constitutional-law'
+  | 'contracts'
+  | 'criminal-law'
+  | 'evidence'
+  | 'real-property'
+  | 'torts'
+  | 'civil-procedure'
+  | 'community-property'
+  | 'professional-responsibility'
+  | 'remedies'
+  | 'wills-trusts';
 
 export const TOPIC_LABELS: Record<Topic, string> = {
-  algebra: 'Algebra',
-  geometry: 'Geometry',
-  statistics: 'Statistics',
-  calculus: 'Calculus',
-  biology: 'Biology',
-  chemistry: 'Chemistry',
-  physics: 'Physics',
-  history: 'History',
-  literature: 'Literature',
-  grammar: 'Grammar',
+  'constitutional-law': 'Constitutional Law',
+  contracts: 'Contracts',
+  'criminal-law': 'Criminal Law',
+  evidence: 'Evidence',
+  'real-property': 'Real Property',
+  torts: 'Torts',
+  'civil-procedure': 'Civil Procedure',
+  'community-property': 'Community Property',
+  'professional-responsibility': 'Professional Responsibility',
+  remedies: 'Remedies',
+  'wills-trusts': 'Wills & Trusts',
 };
 
 export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   'multiple-choice': 'Multiple Choice',
   'true-false': 'True / False',
-  'fill-in-the-blank': 'Fill in the Blank',
-  matching: 'Matching',
+  'fill-in-the-blank': 'Rule Completion',
+  'issue-spotting': 'Issue Spotting',
   'short-answer': 'Short Answer',
 };
 
@@ -46,11 +48,11 @@ export interface Question {
   type: QuestionType;
   difficulty: Difficulty;
   stem: string;                    // The question text
-  choices?: string[];              // For multiple-choice / matching
+  choices?: string[];              // For multiple-choice / issue-spotting
   correctAnswer: string;           // Canonical correct answer
   acceptableAnswers?: string[];    // Alternative correct phrasings
   explanation: string;
-  tags: string[];                  // fine-grained tags like "quadratic", "photosynthesis"
+  tags: string[];                  // fine-grained tags like "due-process", "hearsay"
   phrasingFeatures: PhrasingFeatures;
 }
 

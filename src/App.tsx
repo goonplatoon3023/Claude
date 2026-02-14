@@ -16,8 +16,8 @@ export default function App() {
       {/* ─── Sidebar ─────────────────────────────────────── */}
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="brand-icon">A</div>
-          <span className="brand-text">AdaptIQ</span>
+          <div className="brand-icon">B</div>
+          <span className="brand-text">BarPrep IQ</span>
         </div>
 
         <nav className="sidebar-nav">

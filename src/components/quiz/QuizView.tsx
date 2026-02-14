@@ -132,8 +132,8 @@ export default function QuizView({ questions, onComplete, onExit, title }: QuizV
 
         <p className="question-stem">{question.stem}</p>
 
-        {/* Multiple choice */}
-        {question.type === 'multiple-choice' && question.choices && (
+        {/* Multiple choice / Issue spotting */}
+        {(question.type === 'multiple-choice' || question.type === 'issue-spotting') && question.choices && (
           <div className="choices">
             {question.choices.map((choice, i) => (
               <button

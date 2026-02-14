@@ -3,7 +3,7 @@ import type { AnswerRecord, WeaknessProfile, StudyModule } from '../types';
 import { analyzeWeaknesses } from '../engine/weaknessAnalyzer';
 import { generateStudyModules } from '../engine/questionSelector';
 
-const STORAGE_KEY = 'adaptive-tutor-records';
+const STORAGE_KEY = 'barprep-iq-records';
 
 function loadRecords(): AnswerRecord[] {
   try {
