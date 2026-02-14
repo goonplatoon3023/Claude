@@ -1,71 +1,184 @@
-import { useState, useCallback, useEffect } from 'react';
-import type { AnswerRecord, WeaknessProfile, StudyModule } from '../types';
-import { analyzeWeaknesses } from '../engine/weaknessAnalyzer';
-import { generateStudyModules } from '../engine/questionSelector';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
+import type {
+  AppState,
+  UserProfile,
+  FitnessGoals,
+  CurrentLifts,
+  HeartRateEntry,
+  MeasurementHistory,
+  LiftEntry,
+} from '../types';
+import { generateWorkoutPlan } from '../engine/workoutGenerator';
+import { generateNutritionPlan } from '../engine/nutritionGenerator';
 
-const STORAGE_KEY = 'barprep-iq-records';
+const STORAGE_KEY = 'fitforge-data';
 
-function loadRecords(): AnswerRecord[] {
+const defaultState: AppState = {
+  profile: null,
+  goals: null,
+  currentLifts: {},
+  workoutPlan: null,
+  nutritionPlan: null,
+  heartRateEntries: [],
+  measurementHistory: [],
+};
+
+interface StoreActions {
+  // Profile
+  saveProfile: (profile: UserProfile) => void;
+
+  // Goals
+  saveGoals: (goals: FitnessGoals) => void;
+
+  // Lifts
+  saveLift: (lift: LiftEntry) => void;
+  removeLift: (exerciseId: string) => void;
+
+  // Plans - auto-generate when profile + goals exist
+  generatePlans: () => void;
+
+  // Heart Rate
+  addHeartRateEntry: (entry: HeartRateEntry) => void;
+  removeHeartRateEntry: (id: string) => void;
+
+  // Measurement History
+  addMeasurement: (entry: MeasurementHistory) => void;
+
+  // Reset
+  resetAll: () => void;
+}
+
+type StoreContextValue = { state: AppState } & StoreActions;
+
+const StoreContext = React.createContext<StoreContextValue | null>(null);
+
+function loadState(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw) as AppState;
+      return { ...defaultState, ...parsed };
+    }
   } catch {
-    // corrupt data — start fresh
+    // corrupt data - start fresh
   }
-  return [];
+  return defaultState;
 }
 
-function saveRecords(records: AnswerRecord[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+function persistState(state: AppState): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-export function useAppStore() {
-  const [records, setRecords] = useState<AnswerRecord[]>(loadRecords);
-  const [profile, setProfile] = useState<WeaknessProfile>(() => analyzeWeaknesses(loadRecords()));
-  const [modules, setModules] = useState<StudyModule[]>([]);
+export function StoreProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<AppState>(loadState);
 
-  // Persist and re-analyze whenever records change
+  // Persist state to localStorage whenever it changes
   useEffect(() => {
-    saveRecords(records);
-    const newProfile = analyzeWeaknesses(records);
-    setProfile(newProfile);
-  }, [records]);
+    persistState(state);
+  }, [state]);
 
-  // Regenerate modules when profile changes
-  useEffect(() => {
-    const answeredIds = new Set(records.map(r => r.questionId));
-    setModules(generateStudyModules(profile, answeredIds));
-  }, [profile, records]);
+  const regeneratePlans = useCallback(
+    (profile: UserProfile | null, goals: FitnessGoals | null, lifts: CurrentLifts) => {
+      if (profile && goals) {
+        const workoutPlan = generateWorkoutPlan(profile, goals, lifts);
+        const nutritionPlan = generateNutritionPlan(profile, goals);
+        return { workoutPlan, nutritionPlan };
+      }
+      return { workoutPlan: null, nutritionPlan: null };
+    },
+    [],
+  );
 
-  const addRecord = useCallback((record: AnswerRecord) => {
-    setRecords(prev => [...prev, record]);
+  const saveProfile = useCallback(
+    (profile: UserProfile) => {
+      setState((prev) => {
+        const plans = regeneratePlans(profile, prev.goals, prev.currentLifts);
+        return { ...prev, profile, ...plans };
+      });
+    },
+    [regeneratePlans],
+  );
+
+  const saveGoals = useCallback(
+    (goals: FitnessGoals) => {
+      setState((prev) => {
+        const plans = regeneratePlans(prev.profile, goals, prev.currentLifts);
+        return { ...prev, goals, ...plans };
+      });
+    },
+    [regeneratePlans],
+  );
+
+  const saveLift = useCallback((lift: LiftEntry) => {
+    setState((prev) => ({
+      ...prev,
+      currentLifts: {
+        ...prev.currentLifts,
+        [lift.exerciseId]: lift,
+      },
+    }));
   }, []);
 
-  const addRecords = useCallback((newRecords: AnswerRecord[]) => {
-    setRecords(prev => [...prev, ...newRecords]);
+  const removeLift = useCallback((exerciseId: string) => {
+    setState((prev) => {
+      const { [exerciseId]: _, ...rest } = prev.currentLifts;
+      return { ...prev, currentLifts: rest };
+    });
   }, []);
 
-  const getAnsweredIds = useCallback((): Set<string> => {
-    return new Set(records.map(r => r.questionId));
-  }, [records]);
+  const generatePlans = useCallback(() => {
+    setState((prev) => {
+      const plans = regeneratePlans(prev.profile, prev.goals, prev.currentLifts);
+      return { ...prev, ...plans };
+    });
+  }, [regeneratePlans]);
 
-  const clearHistory = useCallback(() => {
-    setRecords([]);
+  const addHeartRateEntry = useCallback((entry: HeartRateEntry) => {
+    setState((prev) => ({
+      ...prev,
+      heartRateEntries: [...prev.heartRateEntries, entry],
+    }));
+  }, []);
+
+  const removeHeartRateEntry = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      heartRateEntries: prev.heartRateEntries.filter((e) => e.id !== id),
+    }));
+  }, []);
+
+  const addMeasurement = useCallback((entry: MeasurementHistory) => {
+    setState((prev) => ({
+      ...prev,
+      measurementHistory: [...prev.measurementHistory, entry],
+    }));
+  }, []);
+
+  const resetAll = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    setState(defaultState);
   }, []);
 
-  const getRecentRecords = useCallback((count: number): AnswerRecord[] => {
-    return records.slice(-count);
-  }, [records]);
-
-  return {
-    records,
-    profile,
-    modules,
-    addRecord,
-    addRecords,
-    getAnsweredIds,
-    clearHistory,
-    getRecentRecords,
+  const value: StoreContextValue = {
+    state,
+    saveProfile,
+    saveGoals,
+    saveLift,
+    removeLift,
+    generatePlans,
+    addHeartRateEntry,
+    removeHeartRateEntry,
+    addMeasurement,
+    resetAll,
   };
+
+  return React.createElement(StoreContext.Provider, { value }, children);
+}
+
+export function useStore(): StoreContextValue {
+  const context = useContext(StoreContext);
+  if (!context) {
+    throw new Error('useStore must be used within a StoreProvider');
+  }
+  return context;
 }
