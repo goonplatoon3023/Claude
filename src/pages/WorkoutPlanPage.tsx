@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useStore } from '../store/useAppStore';
 import { GOAL_LABELS, MUSCLE_GROUP_LABELS } from '../types';
 import type { WorkoutDay, PlannedExercise, CardioSession, HeartRateZone } from '../types';
@@ -183,6 +184,36 @@ function DayCard({ day }: { day: WorkoutDay }) {
 }
 
 function ExerciseRow({ exercise, index }: { exercise: PlannedExercise; index: number }) {
+  const { state, saveLift } = useStore();
+  const [editing, setEditing] = useState(false);
+  const existingLift = state.currentLifts[exercise.exerciseId];
+  const [draftWeight, setDraftWeight] = useState(
+    existingLift ? String(existingLift.weight) : String(exercise.weight)
+  );
+  const [draftReps, setDraftReps] = useState(
+    existingLift ? String(existingLift.reps) : String(exercise.reps.includes('-') ? exercise.reps.split('-')[0] : exercise.reps)
+  );
+  const [draftSets, setDraftSets] = useState(
+    existingLift ? String(existingLift.sets) : String(exercise.sets)
+  );
+
+  function handleSave() {
+    const weight = parseFloat(draftWeight) || 0;
+    const reps = parseInt(draftReps, 10) || 1;
+    const sets = parseInt(draftSets, 10) || 1;
+    saveLift({
+      exerciseId: exercise.exerciseId,
+      exerciseName: exercise.exerciseName,
+      weight,
+      reps,
+      sets,
+      lastUpdated: new Date().toISOString(),
+    });
+    setEditing(false);
+  }
+
+  const displayWeight = existingLift ? existingLift.weight : exercise.weight;
+
   return (
     <tr style={{ borderBottom: '1px solid #1e293b' }}>
       <td style={styles.td}>{index}</td>
@@ -212,9 +243,66 @@ function ExerciseRow({ exercise, index }: { exercise: PlannedExercise; index: nu
         <span style={{ fontWeight: 600, color: '#22c55e' }}>{exercise.reps}</span>
       </td>
       <td style={styles.tdCenter}>
-        <span style={{ fontWeight: 700, color: '#f59e0b' }}>
-          {exercise.weight > 0 ? `${exercise.weight} lbs` : 'BW'}
-        </span>
+        {!editing ? (
+          <div
+            onClick={() => setEditing(true)}
+            style={{ cursor: 'pointer' }}
+            title="Click to log your weight"
+          >
+            <span style={{ fontWeight: 700, color: existingLift ? '#22c55e' : '#f59e0b' }}>
+              {displayWeight > 0 ? `${displayWeight} lbs` : 'BW'}
+            </span>
+            {existingLift && (
+              <div style={{ fontSize: 10, color: '#64748b' }}>Your lift</div>
+            )}
+            {!existingLift && (
+              <div style={{ fontSize: 10, color: '#64748b' }}>Click to log</div>
+            )}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 140 }}>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 9, color: '#64748b', textTransform: 'uppercase' }}>Wt (lbs)</div>
+                <input
+                  type="number"
+                  min="0"
+                  step="5"
+                  value={draftWeight}
+                  onChange={e => setDraftWeight(e.target.value)}
+                  style={styles.inlineInput}
+                  autoFocus
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 9, color: '#64748b', textTransform: 'uppercase' }}>Reps</div>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={draftReps}
+                  onChange={e => setDraftReps(e.target.value)}
+                  style={styles.inlineInput}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 9, color: '#64748b', textTransform: 'uppercase' }}>Sets</div>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={draftSets}
+                  onChange={e => setDraftSets(e.target.value)}
+                  style={styles.inlineInput}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button onClick={handleSave} style={styles.inlineSaveBtn}>Save</button>
+              <button onClick={() => setEditing(false)} style={styles.inlineCancelBtn}>X</button>
+            </div>
+          </div>
+        )}
       </td>
       <td style={styles.tdCenter}>
         <span style={{ color: '#94a3b8' }}>{formatRest(exercise.restSeconds)}</span>
@@ -386,5 +474,37 @@ const styles = {
     backgroundColor: '#0f172a',
     borderRadius: 8,
     border: '1px solid #22c55e33',
+  } as React.CSSProperties,
+  inlineInput: {
+    width: '100%',
+    padding: '4px 6px',
+    borderRadius: 6,
+    border: '1px solid #334155',
+    background: '#0f172a',
+    color: '#f8fafc',
+    fontSize: 13,
+    textAlign: 'center' as const,
+    outline: 'none',
+    boxSizing: 'border-box' as const,
+  } as React.CSSProperties,
+  inlineSaveBtn: {
+    flex: 1,
+    padding: '4px 8px',
+    borderRadius: 6,
+    border: 'none',
+    background: '#22c55e',
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+  } as React.CSSProperties,
+  inlineCancelBtn: {
+    padding: '4px 8px',
+    borderRadius: 6,
+    border: '1px solid #334155',
+    background: 'transparent',
+    color: '#94a3b8',
+    fontSize: 11,
+    cursor: 'pointer',
   } as React.CSSProperties,
 };

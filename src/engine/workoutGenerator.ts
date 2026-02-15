@@ -220,6 +220,16 @@ function randomInRange(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+/** Fisher-Yates shuffle to randomize arrays in-place */
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 /**
  * Schedules training day indices (0-based, within a 7-day week) to distribute
  * rest appropriately. Beginners never have 3 training days in a row.
@@ -496,9 +506,8 @@ export function generateWorkoutPlan(
         usedExerciseIds.add(ex.exerciseId);
       }
 
-      const cardio = isCardioDay
-        ? buildCardioSession(goals)
-        : undefined;
+      // Always include a cardio recommendation for training days
+      const cardio = buildCardioSession(goals, isCardioDay);
 
       const estimatedDuration = estimateDuration(exercises, cardio);
 
@@ -592,8 +601,8 @@ function selectExercises(
   for (const muscle of muscleGroups) {
     if (exercises.length >= targetCount) break;
 
-    const compounds = getCompoundExercises(muscle)
-      .filter(e => !selectedIds.has(e.id));
+    const compounds = shuffle(getCompoundExercises(muscle)
+      .filter(e => !selectedIds.has(e.id)));
 
     // Prefer exercises we haven't used this week (for full body variety)
     const sorted = compounds.sort((a, b) => {
@@ -620,8 +629,8 @@ function selectExercises(
   for (const muscle of musclesNeedingMore) {
     if (exercises.length >= targetCount) break;
 
-    const isolations = getIsolationExercises(muscle)
-      .filter(e => !selectedIds.has(e.id))
+    const isolations = shuffle(getIsolationExercises(muscle)
+      .filter(e => !selectedIds.has(e.id)))
       .sort((a, b) => {
         const aUsed = usedExerciseIds.has(a.id) ? 1 : 0;
         const bUsed = usedExerciseIds.has(b.id) ? 1 : 0;
@@ -640,8 +649,8 @@ function selectExercises(
     for (const muscle of muscleGroups) {
       if (exercises.length >= exerciseRange.min) break;
 
-      const remaining = getExercisesByMuscle(muscle)
-        .filter(e => !selectedIds.has(e.id))
+      const remaining = shuffle(getExercisesByMuscle(muscle)
+        .filter(e => !selectedIds.has(e.id)))
         .sort((a, b) => {
           const aUsed = usedExerciseIds.has(a.id) ? 1 : 0;
           const bUsed = usedExerciseIds.has(b.id) ? 1 : 0;
@@ -750,11 +759,7 @@ function assignCardioDays(
   return cardioDays.sort((a, b) => a - b);
 }
 
-function buildCardioSession(goals: FitnessGoals): CardioSession {
-  // Pick a cardio type (rotate through available types)
-  const cardioType = goals.cardioTypes[Math.floor(Math.random() * goals.cardioTypes.length)];
-  const config = getCardioConfig(goals.primaryGoal, cardioType);
-
+function buildCardioSession(goals: FitnessGoals, isScheduledCardioDay: boolean = true): CardioSession {
   const cardioLabels: Record<CardioType, string> = {
     running: 'Running',
     cycling: 'Cycling',
@@ -766,12 +771,41 @@ function buildCardioSession(goals: FitnessGoals): CardioSession {
     hiit: 'HIIT',
   };
 
+  // If user has cardio types selected, use those
+  if (goals.cardioTypes.length > 0) {
+    const cardioType = goals.cardioTypes[Math.floor(Math.random() * goals.cardioTypes.length)];
+    const config = getCardioConfig(goals.primaryGoal, cardioType);
+
+    // On non-scheduled cardio days, give a lighter/shorter recommendation
+    if (!isScheduledCardioDay) {
+      return {
+        type: cardioType,
+        durationMinutes: Math.max(10, Math.round(config.durationMinutes * 0.5)),
+        targetHeartRateZone: 'zone2',
+        intensity: 'low',
+        description: `Optional: ${cardioLabels[cardioType]} - Light post-workout cardio to aid recovery and burn extra calories. Keep it easy.`,
+      };
+    }
+
+    return {
+      type: cardioType,
+      durationMinutes: config.durationMinutes,
+      targetHeartRateZone: config.targetHeartRateZone,
+      intensity: config.intensity,
+      description: `${cardioLabels[cardioType]} - ${config.description}`,
+    };
+  }
+
+  // No cardio types selected - provide a general walking recommendation
+  const duration = isScheduledCardioDay ? 20 : 10;
   return {
-    type: cardioType,
-    durationMinutes: config.durationMinutes,
-    targetHeartRateZone: config.targetHeartRateZone,
-    intensity: config.intensity,
-    description: `${cardioLabels[cardioType]} - ${config.description}`,
+    type: 'walking',
+    durationMinutes: duration,
+    targetHeartRateZone: 'zone2',
+    intensity: 'low',
+    description: isScheduledCardioDay
+      ? 'Walking - Moderate-pace walking to support cardiovascular health and recovery.'
+      : 'Optional: Light walking post-workout to aid recovery. Keep it easy and conversational.',
   };
 }
 
