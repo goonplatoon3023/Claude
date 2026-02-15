@@ -261,21 +261,6 @@ responsiveStyles.textContent = `
       padding-top: 56px;
     }
   }
-  button:focus, button:active, button:focus-visible {
-    outline: none;
-  }
-  nav button {
-    color: #94a3b8 !important;
-  }
-  nav button:hover {
-    background-color: #1e293b !important;
-    color: #f8fafc !important;
-  }
-  nav button[data-active="true"] {
-    background-color: #1e293b !important;
-    color: #f8fafc !important;
-    font-weight: 600 !important;
-  }
 `;
 
 // Only add once

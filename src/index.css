@@ -36,6 +36,15 @@ a {
 
 button {
   font-family: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus,
+button:active,
+button:focus-visible {
+  outline: none;
+  color: inherit;
 }
 
 input, select, textarea {
