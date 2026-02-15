@@ -81,6 +81,7 @@ function AppContent() {
             return (
               <button
                 key={item.key}
+                data-active={isActive ? 'true' : 'false'}
                 onClick={() => {
                   setPage(item.key);
                   setSidebarOpen(false);
@@ -259,6 +260,21 @@ responsiveStyles.textContent = `
       margin-left: 0 !important;
       padding-top: 56px;
     }
+  }
+  button:focus, button:active, button:focus-visible {
+    outline: none;
+  }
+  nav button {
+    color: #94a3b8 !important;
+  }
+  nav button:hover {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+  }
+  nav button[data-active="true"] {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+    font-weight: 600 !important;
   }
 `;
 
