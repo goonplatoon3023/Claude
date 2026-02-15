@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useStore } from '../store/useAppStore';
 import type { LiftEntry, MuscleGroup } from '../types';
 import { MUSCLE_GROUP_LABELS } from '../types';
 import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
 import { estimate1RM } from '../utils/calculations';
+import { suggestWeight } from '../utils/weightSuggestions';
 
 type MuscleFilter = 'all' | MuscleGroup;
 
@@ -81,14 +82,42 @@ export default function LiftsPage() {
     });
   }
 
+  function getSuggestion(exerciseId: string) {
+    if (currentLifts[exerciseId]) return null;
+    if (!state.profile || !state.goals) return null;
+    return suggestWeight(
+      exerciseId,
+      currentLifts,
+      state.profile.weight,
+      state.goals.experienceLevel,
+      state.profile.gender,
+    );
+  }
+
   function getDraft(exerciseId: string): DraftLift {
     if (drafts[exerciseId]) return drafts[exerciseId];
     const existing = currentLifts[exerciseId];
+    if (existing) {
+      return {
+        weight: String(existing.weight),
+        reps: String(existing.reps),
+        sets: String(existing.sets),
+      };
+    }
+    // Use suggestion if available, otherwise default
+    const suggestion = getSuggestion(exerciseId);
+    if (suggestion && suggestion.confidence !== 'high' && suggestion.suggestedWeight > 0) {
+      return {
+        weight: String(suggestion.suggestedWeight),
+        reps: String(suggestion.suggestedReps),
+        sets: String(suggestion.suggestedSets),
+      };
+    }
     const exercise = EXERCISE_DATABASE.find((e) => e.id === exerciseId);
     return {
-      weight: existing ? String(existing.weight) : String(exercise?.defaultWeight ?? 0),
-      reps: existing ? String(existing.reps) : '8',
-      sets: existing ? String(existing.sets) : '3',
+      weight: String(exercise?.defaultWeight ?? 0),
+      reps: '8',
+      sets: '3',
     };
   }
 
@@ -494,6 +523,14 @@ export default function LiftsPage() {
               const isExpanded = expandedCards.has(exercise.id);
               const draft = getDraft(exercise.id);
               const mgColor = MUSCLE_GROUP_COLORS[exercise.muscleGroup];
+              const suggestion = !liftEntry ? getSuggestion(exercise.id) : null;
+              const hasSuggestion = suggestion && suggestion.confidence !== 'high' && suggestion.suggestedWeight > 0;
+
+              const confidenceColors: Record<string, string> = {
+                high: '#22c55e',
+                medium: '#f59e0b',
+                low: '#64748b',
+              };
 
               return (
                 <div key={exercise.id} style={styles.card(!!liftEntry)}>
@@ -534,9 +571,45 @@ export default function LiftsPage() {
                     </div>
                   )}
 
+                  {/* Suggestion display (when no lift logged) */}
+                  {!liftEntry && hasSuggestion && !isExpanded && (
+                    <div style={{
+                      background: '#0f172a',
+                      borderRadius: 8,
+                      padding: '10px 14px',
+                      marginBottom: 12,
+                      border: `1px solid ${confidenceColors[suggestion.confidence]}33`,
+                    }}>
+                      <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                        Suggested Starting Weight
+                      </div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: confidenceColors[suggestion.confidence] }}>
+                        {suggestion.suggestedWeight} lbs x {suggestion.suggestedReps} reps x {suggestion.suggestedSets} sets
+                      </div>
+                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+                        {suggestion.reason}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Expanded input form */}
                   {(isExpanded || liftEntry) && (
                     <>
+                      {/* Suggestion hint in edit mode */}
+                      {!liftEntry && hasSuggestion && (
+                        <div style={{
+                          fontSize: 11,
+                          color: confidenceColors[suggestion.confidence],
+                          padding: '6px 10px',
+                          backgroundColor: confidenceColors[suggestion.confidence] + '11',
+                          borderRadius: 6,
+                          marginBottom: 8,
+                          lineHeight: 1.4,
+                        }}>
+                          Suggested: {suggestion.suggestedWeight} lbs &mdash; {suggestion.reason}
+                        </div>
+                      )}
+
                       <div style={styles.inputRow}>
                         <div style={styles.inputGroup}>
                           <label style={styles.inputLabel}>Weight (lbs)</label>

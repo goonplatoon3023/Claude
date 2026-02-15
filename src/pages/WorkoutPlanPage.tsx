@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useStore } from '../store/useAppStore';
 import { GOAL_LABELS, MUSCLE_GROUP_LABELS } from '../types';
 import type { WorkoutDay, PlannedExercise, CardioSession, HeartRateZone } from '../types';
+import { suggestWeight } from '../utils/weightSuggestions';
 
 const ZONE_LABELS: Record<HeartRateZone, string> = {
   zone1: 'Zone 1 - Recovery',
@@ -187,14 +188,36 @@ function ExerciseRow({ exercise, index }: { exercise: PlannedExercise; index: nu
   const { state, saveLift } = useStore();
   const [editing, setEditing] = useState(false);
   const existingLift = state.currentLifts[exercise.exerciseId];
+
+  // Get weight suggestion based on similar lifts and body measurements
+  const suggestion = useMemo(() => {
+    if (existingLift) return null; // Don't suggest if already logged
+    if (!state.profile || !state.goals) return null;
+    return suggestWeight(
+      exercise.exerciseId,
+      state.currentLifts,
+      state.profile.weight,
+      state.goals.experienceLevel,
+      state.profile.gender,
+    );
+  }, [exercise.exerciseId, existingLift, state.currentLifts, state.profile, state.goals]);
+
+  const suggestedWeight = suggestion && suggestion.confidence !== 'high' ? suggestion.suggestedWeight : null;
+
   const [draftWeight, setDraftWeight] = useState(
-    existingLift ? String(existingLift.weight) : String(exercise.weight)
+    existingLift ? String(existingLift.weight)
+    : suggestedWeight ? String(suggestedWeight)
+    : String(exercise.weight)
   );
   const [draftReps, setDraftReps] = useState(
-    existingLift ? String(existingLift.reps) : String(exercise.reps.includes('-') ? exercise.reps.split('-')[0] : exercise.reps)
+    existingLift ? String(existingLift.reps)
+    : suggestion?.suggestedReps ? String(suggestion.suggestedReps)
+    : String(exercise.reps.includes('-') ? exercise.reps.split('-')[0] : exercise.reps)
   );
   const [draftSets, setDraftSets] = useState(
-    existingLift ? String(existingLift.sets) : String(exercise.sets)
+    existingLift ? String(existingLift.sets)
+    : suggestion?.suggestedSets ? String(suggestion.suggestedSets)
+    : String(exercise.sets)
   );
 
   function handleSave() {
@@ -212,7 +235,24 @@ function ExerciseRow({ exercise, index }: { exercise: PlannedExercise; index: nu
     setEditing(false);
   }
 
+  function handleStartEditing() {
+    // Pre-fill with suggestion when starting to edit
+    if (!existingLift && suggestion && suggestion.confidence !== 'high') {
+      setDraftWeight(String(suggestion.suggestedWeight));
+      if (suggestion.suggestedReps) setDraftReps(String(suggestion.suggestedReps));
+      if (suggestion.suggestedSets) setDraftSets(String(suggestion.suggestedSets));
+    }
+    setEditing(true);
+  }
+
   const displayWeight = existingLift ? existingLift.weight : exercise.weight;
+
+  // Confidence color for suggestion badge
+  const confidenceColors = {
+    high: '#22c55e',
+    medium: '#f59e0b',
+    low: '#64748b',
+  };
 
   return (
     <tr style={{ borderBottom: '1px solid #1e293b' }}>
@@ -245,7 +285,7 @@ function ExerciseRow({ exercise, index }: { exercise: PlannedExercise; index: nu
       <td style={styles.tdCenter}>
         {!editing ? (
           <div
-            onClick={() => setEditing(true)}
+            onClick={handleStartEditing}
             style={{ cursor: 'pointer' }}
             title="Click to log your weight"
           >
@@ -255,12 +295,30 @@ function ExerciseRow({ exercise, index }: { exercise: PlannedExercise; index: nu
             {existingLift && (
               <div style={{ fontSize: 10, color: '#64748b' }}>Your lift</div>
             )}
+            {!existingLift && suggestion && suggestedWeight && suggestedWeight > 0 && (
+              <div style={{ fontSize: 10, color: confidenceColors[suggestion.confidence], marginTop: 2 }}>
+                Suggested: {suggestedWeight} lbs
+              </div>
+            )}
             {!existingLift && (
               <div style={{ fontSize: 10, color: '#64748b' }}>Click to log</div>
             )}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 140 }}>
+            {/* Suggestion hint */}
+            {suggestion && suggestion.confidence !== 'high' && suggestion.suggestedWeight > 0 && (
+              <div style={{
+                fontSize: 10,
+                color: confidenceColors[suggestion.confidence],
+                padding: '2px 4px',
+                backgroundColor: confidenceColors[suggestion.confidence] + '11',
+                borderRadius: 4,
+                lineHeight: 1.3,
+              }}>
+                {suggestion.reason}
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 4 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 9, color: '#64748b', textTransform: 'uppercase' }}>Wt (lbs)</div>
