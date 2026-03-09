@@ -173,7 +173,7 @@ recommendationsRouter.post('/recommendations', async (req: Request, res: Respons
     ];
 
     let articles: Article[] = [];
-    let maxContinuations = 3;
+    let maxContinuations = 1;
     let continuations = 0;
 
     while (continuations <= maxContinuations) {

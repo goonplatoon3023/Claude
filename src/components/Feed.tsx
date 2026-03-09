@@ -53,7 +53,7 @@ export function Feed({
           preferences,
           ratingHistory: ratings.slice(-50),
         }),
-        signal: AbortSignal.timeout(180_000), // 3 min timeout
+        signal: AbortSignal.timeout(300_000), // 5 min timeout
       });
 
       if (!res.ok) {
