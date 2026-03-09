@@ -1,71 +1,132 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { AnswerRecord, WeaknessProfile, StudyModule } from '../types';
-import { analyzeWeaknesses } from '../engine/weaknessAnalyzer';
-import { generateStudyModules } from '../engine/questionSelector';
+import type {
+  UserPreferences,
+  Article,
+  RatingItem,
+  SavedArticle,
+  DailyFeed,
+} from '../types';
 
-const STORAGE_KEY = 'barprep-iq-records';
+const STORAGE_KEYS = {
+  preferences: 'readwise-preferences',
+  ratings: 'readwise-ratings',
+  saved: 'readwise-saved',
+  feed: 'readwise-feed',
+} as const;
 
-function loadRecords(): AnswerRecord[] {
+const DEFAULT_PREFERENCES: UserPreferences = {
+  categories: [],
+  publicationTypes: [],
+  specificInterests: '',
+  onboardingComplete: false,
+};
+
+function load<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw) as T;
   } catch {
-    // corrupt data — start fresh
+    // corrupt — ignore
   }
-  return [];
+  return fallback;
 }
 
-function saveRecords(records: AnswerRecord[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+function save(key: string, value: unknown) {
+  localStorage.setItem(key, JSON.stringify(value));
 }
 
 export function useAppStore() {
-  const [records, setRecords] = useState<AnswerRecord[]>(loadRecords);
-  const [profile, setProfile] = useState<WeaknessProfile>(() => analyzeWeaknesses(loadRecords()));
-  const [modules, setModules] = useState<StudyModule[]>([]);
+  const [preferences, setPreferencesState] = useState<UserPreferences>(() =>
+    load(STORAGE_KEYS.preferences, DEFAULT_PREFERENCES)
+  );
+  const [ratings, setRatings] = useState<RatingItem[]>(() =>
+    load(STORAGE_KEYS.ratings, [])
+  );
+  const [savedArticles, setSavedArticles] = useState<SavedArticle[]>(() =>
+    load(STORAGE_KEYS.saved, [])
+  );
+  const [feed, setFeedState] = useState<DailyFeed | null>(() =>
+    load(STORAGE_KEYS.feed, null)
+  );
 
-  // Persist and re-analyze whenever records change
-  useEffect(() => {
-    saveRecords(records);
-    const newProfile = analyzeWeaknesses(records);
-    setProfile(newProfile);
-  }, [records]);
+  // Derived sets for O(1) lookup
+  const ratedIds = new Set(ratings.map((r) => r.article.id));
+  const savedIds = new Set(savedArticles.map((s) => s.article.id));
 
-  // Regenerate modules when profile changes
-  useEffect(() => {
-    const answeredIds = new Set(records.map(r => r.questionId));
-    setModules(generateStudyModules(profile, answeredIds));
-  }, [profile, records]);
+  // Persist on change
+  useEffect(() => { save(STORAGE_KEYS.preferences, preferences); }, [preferences]);
+  useEffect(() => { save(STORAGE_KEYS.ratings, ratings.slice(-200)); }, [ratings]);
+  useEffect(() => { save(STORAGE_KEYS.saved, savedArticles); }, [savedArticles]);
+  useEffect(() => { save(STORAGE_KEYS.feed, feed); }, [feed]);
 
-  const addRecord = useCallback((record: AnswerRecord) => {
-    setRecords(prev => [...prev, record]);
+  const setPreferences = useCallback((prefs: UserPreferences) => {
+    setPreferencesState(prefs);
   }, []);
 
-  const addRecords = useCallback((newRecords: AnswerRecord[]) => {
-    setRecords(prev => [...prev, ...newRecords]);
+  const rateArticle = useCallback((article: Article, rating: 'up' | 'down') => {
+    setRatings((prev) => {
+      const filtered = prev.filter((r) => r.article.id !== article.id);
+      return [...filtered, { article, rating, ratedAt: new Date().toISOString() }];
+    });
   }, []);
 
-  const getAnsweredIds = useCallback((): Set<string> => {
-    return new Set(records.map(r => r.questionId));
-  }, [records]);
-
-  const clearHistory = useCallback(() => {
-    setRecords([]);
-    localStorage.removeItem(STORAGE_KEY);
+  const removeRating = useCallback((articleId: string) => {
+    setRatings((prev) => prev.filter((r) => r.article.id !== articleId));
   }, []);
 
-  const getRecentRecords = useCallback((count: number): AnswerRecord[] => {
-    return records.slice(-count);
-  }, [records]);
+  const getRating = useCallback((articleId: string): 'up' | 'down' | null => {
+    const item = ratings.find((r) => r.article.id === articleId);
+    return item?.rating ?? null;
+  }, [ratings]);
+
+  const saveArticle = useCallback((article: Article) => {
+    setSavedArticles((prev) => {
+      if (prev.some((s) => s.article.id === article.id)) return prev;
+      return [...prev, { article, savedAt: new Date().toISOString() }];
+    });
+  }, []);
+
+  const unsaveArticle = useCallback((articleId: string) => {
+    setSavedArticles((prev) => prev.filter((s) => s.article.id !== articleId));
+  }, []);
+
+  const isSaved = useCallback((articleId: string): boolean => {
+    return savedIds.has(articleId);
+  }, [savedIds]);
+
+  const setFeed = useCallback((newFeed: DailyFeed) => {
+    setFeedState(newFeed);
+  }, []);
+
+  const clearFeed = useCallback(() => {
+    setFeedState(null);
+    localStorage.removeItem(STORAGE_KEYS.feed);
+  }, []);
+
+  const resetAll = useCallback(() => {
+    setPreferencesState(DEFAULT_PREFERENCES);
+    setRatings([]);
+    setSavedArticles([]);
+    setFeedState(null);
+    Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
+  }, []);
 
   return {
-    records,
-    profile,
-    modules,
-    addRecord,
-    addRecords,
-    getAnsweredIds,
-    clearHistory,
-    getRecentRecords,
+    preferences,
+    ratings,
+    savedArticles,
+    feed,
+    ratedIds,
+    savedIds,
+    setPreferences,
+    rateArticle,
+    removeRating,
+    getRating,
+    saveArticle,
+    unsaveArticle,
+    isSaved,
+    setFeed,
+    clearFeed,
+    resetAll,
   };
 }

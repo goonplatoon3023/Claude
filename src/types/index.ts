@@ -1,123 +1,92 @@
-export type QuestionType =
-  | 'multiple-choice'
-  | 'true-false'
-  | 'fill-in-the-blank'
-  | 'issue-spotting'
-  | 'short-answer';
+export type Category =
+  | 'politics'
+  | 'science'
+  | 'technology'
+  | 'sports'
+  | 'culture'
+  | 'business'
+  | 'arts'
+  | 'health'
+  | 'environment'
+  | 'international'
+  | 'opinion';
 
-export type Difficulty = 'easy' | 'medium' | 'hard';
+export type PublicationType =
+  | 'mainstream_news'
+  | 'academic_journals'
+  | 'blogs'
+  | 'magazines'
+  | 'newsletters'
+  | 'opinion_commentary';
 
-export type Topic =
-  | 'constitutional-law'
-  | 'contracts'
-  | 'criminal-law'
-  | 'evidence'
-  | 'real-property'
-  | 'torts'
-  | 'civil-procedure'
-  | 'community-property'
-  | 'professional-responsibility'
-  | 'remedies'
-  | 'wills-trusts';
-
-export const TOPIC_LABELS: Record<Topic, string> = {
-  'constitutional-law': 'Constitutional Law',
-  contracts: 'Contracts',
-  'criminal-law': 'Criminal Law',
-  evidence: 'Evidence',
-  'real-property': 'Real Property',
-  torts: 'Torts',
-  'civil-procedure': 'Civil Procedure',
-  'community-property': 'Community Property',
-  'professional-responsibility': 'Professional Responsibility',
-  remedies: 'Remedies',
-  'wills-trusts': 'Wills & Trusts',
-};
-
-export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
-  'multiple-choice': 'Multiple Choice',
-  'true-false': 'True / False',
-  'fill-in-the-blank': 'Rule Completion',
-  'issue-spotting': 'Issue Spotting',
-  'short-answer': 'Short Answer',
-};
-
-export interface Question {
-  id: string;
-  topic: Topic;
-  type: QuestionType;
-  difficulty: Difficulty;
-  stem: string;                    // The question text
-  choices?: string[];              // For multiple-choice / issue-spotting
-  correctAnswer: string;           // Canonical correct answer
-  acceptableAnswers?: string[];    // Alternative correct phrasings
-  explanation: string;
-  tags: string[];                  // fine-grained tags like "due-process", "hearsay"
-  phrasingFeatures: PhrasingFeatures;
-}
-
-export interface PhrasingFeatures {
-  hasNegation: boolean;            // "Which is NOT…"
-  hasDoubleNegation: boolean;      // "not unlikely"
-  hasAbsoluteLanguage: boolean;    // "always", "never", "all"
-  hasQualifiedLanguage: boolean;   // "sometimes", "usually", "may"
-  sentenceComplexity: 'simple' | 'compound' | 'complex';
-  vocabularyLevel: 'basic' | 'intermediate' | 'advanced';
-  keyTerms: string[];              // domain-specific terms in the stem
-}
-
-export interface AnswerRecord {
-  questionId: string;
-  question: Question;
-  userAnswer: string;
-  isCorrect: boolean;
-  timeSpentMs: number;
-  timestamp: number;
-}
-
-export interface TopicStats {
-  topic: Topic;
-  totalAttempted: number;
-  totalCorrect: number;
-  accuracy: number;
-  byType: Record<QuestionType, { attempted: number; correct: number; accuracy: number }>;
-  byDifficulty: Record<Difficulty, { attempted: number; correct: number; accuracy: number }>;
-}
-
-export interface PhrasingWeakness {
-  feature: string;
-  label: string;
-  totalExposed: number;
-  totalCorrect: number;
-  accuracy: number;
-  // How much worse than baseline (overall accuracy)
-  delta: number;
-}
-
-export interface TermWeakness {
-  term: string;
-  totalExposed: number;
-  totalCorrect: number;
-  accuracy: number;
-}
-
-export interface WeaknessProfile {
-  weakTopics: TopicStats[];
-  weakQuestionTypes: { type: QuestionType; accuracy: number; attempted: number }[];
-  phrasingWeaknesses: PhrasingWeakness[];
-  termWeaknesses: TermWeakness[];
-  overallAccuracy: number;
-  totalAnswered: number;
-}
-
-export interface StudyModule {
+export interface Article {
   id: string;
   title: string;
-  description: string;
-  targetWeaknesses: string[];
-  questions: Question[];
-  completed: boolean;
-  score?: number;
+  url: string;
+  summary: string;
+  publication: string;
+  category: Category;
+  author?: string;
+  estimatedReadTime?: number;
 }
 
-export type StudyMode = 'guided' | 'self-study';
+export interface RatingItem {
+  article: Article;
+  rating: 'up' | 'down';
+  ratedAt: string;
+}
+
+export interface SavedArticle {
+  article: Article;
+  savedAt: string;
+}
+
+export interface UserPreferences {
+  categories: Category[];
+  publicationTypes: PublicationType[];
+  specificInterests: string;
+  onboardingComplete: boolean;
+}
+
+export interface DailyFeed {
+  date: string;
+  articles: Article[];
+  generatedAt: string;
+}
+
+export const CATEGORY_META: Record<Category, { label: string; color: string; bg: string }> = {
+  politics:      { label: 'Politics',       color: '#991b1b', bg: '#fef2f2' },
+  science:       { label: 'Science',        color: '#1e40af', bg: '#eff6ff' },
+  technology:    { label: 'Technology',     color: '#6b21a8', bg: '#faf5ff' },
+  sports:        { label: 'Sports',         color: '#14532d', bg: '#f0fdf4' },
+  culture:       { label: 'Culture',        color: '#78350f', bg: '#fffbeb' },
+  business:      { label: 'Business',       color: '#0c4a6e', bg: '#f0f9ff' },
+  arts:          { label: 'Arts',           color: '#831843', bg: '#fdf2f8' },
+  health:        { label: 'Health',         color: '#166534', bg: '#f0fdf4' },
+  environment:   { label: 'Environment',    color: '#14532d', bg: '#ecfdf5' },
+  international: { label: 'International',  color: '#3730a3', bg: '#eef2ff' },
+  opinion:       { label: 'Opinion',        color: '#9a3412', bg: '#fff7ed' },
+};
+
+export const CATEGORY_OPTIONS: { value: Category; label: string; emoji: string }[] = [
+  { value: 'politics',      label: 'Politics',      emoji: '🏛️' },
+  { value: 'science',       label: 'Science',       emoji: '🔬' },
+  { value: 'technology',    label: 'Technology',    emoji: '💻' },
+  { value: 'sports',        label: 'Sports',        emoji: '⚽' },
+  { value: 'culture',       label: 'Culture',       emoji: '🎭' },
+  { value: 'business',      label: 'Business',      emoji: '📈' },
+  { value: 'arts',          label: 'Arts',          emoji: '🎨' },
+  { value: 'health',        label: 'Health',        emoji: '🏥' },
+  { value: 'environment',   label: 'Environment',   emoji: '🌿' },
+  { value: 'international', label: 'International', emoji: '🌍' },
+  { value: 'opinion',       label: 'Opinion',       emoji: '💬' },
+];
+
+export const PUBLICATION_OPTIONS: { value: PublicationType; label: string; description: string }[] = [
+  { value: 'mainstream_news',    label: 'Mainstream News',      description: 'NYT, BBC, The Guardian, etc.' },
+  { value: 'academic_journals',  label: 'Academic & Research',  description: 'Scholarly articles, research blogs' },
+  { value: 'blogs',              label: 'Blogs & Independent',  description: 'Substack, Medium, personal blogs' },
+  { value: 'magazines',          label: 'Magazines',            description: 'The Economist, Wired, New Yorker' },
+  { value: 'newsletters',        label: 'Newsletters',          description: 'Curated email newsletters' },
+  { value: 'opinion_commentary', label: 'Opinion & Commentary', description: 'Editorials, op-eds, analysis pieces' },
+];
